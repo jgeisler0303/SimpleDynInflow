@@ -70,30 +70,32 @@ end
 FST= FAST2Matlab(FST_file);
 fst_dir= fileparts(FST_file);
 
-AD_file= fullfile(fst_dir, strrep(GetFASTPar(FST, 'AeroFile'), '"', ''));
-adDataOut= FAST2Matlab(AD_file);
+AD_file= strrep(GetFASTPar(FST, 'AeroFile'), '"', ''));
+adDataOut= FAST2Matlab(fullfile(fst_dir, AD_file));
 adDataOut= SetFASTPar(adDataOut, 'WakeMod', 1);
 adDataOut= SetFASTPar(adDataOut, 'AFAeroMod', 1);
 adDataOut= SetFASTPar(adDataOut, 'TwrPotent', 0);
 adDataOut= SetFASTPar(adDataOut, 'TwrShadow', 'False');
 adDataOut= SetFASTPar(adDataOut, 'TwrAero', 'False');
 ad_tfile= [AD_file '.tmp'];
+ad_tpath= fullfile(fst_dir, ad_tfile);
 FST= SetFASTPar(FST, 'AeroFile', ad_tfile);
-Matlab2FAST(adDataOut, AD_file, ad_tfile)
+Matlab2FAST(adDataOut, fullfile(fst_dir, AD_file), ad_tpath)
 
-ED_file= fullfile(fst_dir, strrep(GetFASTPar(FST, 'EDFile'), '"', ''));
-edDataOut= FAST2Matlab(ED_file);
+ED_file= strrep(GetFASTPar(FST, 'EDFile'), '"', '');
+edDataOut= FAST2Matlab(fullfile(fst_dir, ED_file));
 edDataOut= SetFASTPar(edDataOut, 'ShftTilt', 0);
 edDataOut= SetFASTPar(edDataOut, 'Precone(1)', 0);
 edDataOut= SetFASTPar(edDataOut, 'Precone(2)', 0);
 edDataOut= SetFASTPar(edDataOut, 'Precone(3)', 0);
 ed_tfile= [ED_file '.tmp'];
+ed_tpath= fullfile(fst_dir, ad_tfile);
 FST= SetFASTPar(FST, 'EDFile', ed_tfile);
-Matlab2FAST(edDataOut, ED_file, ed_tfile)
+Matlab2FAST(edDataOut, fullfile(fst_dir, ED_file), ed_tpath)
 
 fst_tfile= [FST_file '.tmp'];
 Matlab2FAST(FST, FST_file, fst_tfile)
-c= onCleanup(@()delete_temp({ad_tfile, ed_tfile, fst_tfile}));
+c= onCleanup(@()delete_temp({ad_tpath, ed_tpath, fst_tfile}));
 
 d= aerodynSim(f.Time, wind, speed, pitch, fst_tfile, HubHt, outputs);
 
