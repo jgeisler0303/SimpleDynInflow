@@ -1,0 +1,20 @@
+#!/bin/bash
+turbsim COH_URef-4_turbsim.inp
+turbsim COH_URef-5_turbsim.inp
+turbsim COH_URef-6_turbsim.inp
+turbsim COH_URef-7_turbsim.inp
+turbsim COH_URef-8_turbsim.inp
+turbsim COH_URef-9_turbsim.inp
+turbsim COH_URef-10_turbsim.inp
+turbsim COH_URef-11_turbsim.inp
+turbsim COH_URef-12_turbsim.inp
+turbsim COH_URef-13_turbsim.inp
+turbsim COH_URef-14_turbsim.inp
+turbsim COH_URef-15_turbsim.inp
+turbsim COH_URef-16_turbsim.inp
+turbsim COH_URef-17_turbsim.inp
+turbsim COH_URef-18_turbsim.inp
+turbsim COH_URef-19_turbsim.inp
+turbsim COH_URef-20_turbsim.inp
+turbsim COH_URef-21_turbsim.inp
+turbsim COH_URef-22_turbsim.inp

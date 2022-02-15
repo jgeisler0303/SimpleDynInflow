@@ -1,0 +1,20 @@
+
+openfast coh_URef-4_maininput.fst
+openfast coh_URef-5_maininput.fst
+openfast coh_URef-6_maininput.fst
+openfast coh_URef-7_maininput.fst
+openfast coh_URef-8_maininput.fst
+openfast coh_URef-9_maininput.fst
+openfast coh_URef-10_maininput.fst
+openfast coh_URef-11_maininput.fst
+openfast coh_URef-12_maininput.fst
+openfast coh_URef-13_maininput.fst
+openfast coh_URef-14_maininput.fst
+openfast coh_URef-15_maininput.fst
+openfast coh_URef-16_maininput.fst
+openfast coh_URef-17_maininput.fst
+openfast coh_URef-18_maininput.fst
+openfast coh_URef-19_maininput.fst
+openfast coh_URef-20_maininput.fst
+openfast coh_URef-21_maininput.fst
+openfast coh_URef-22_maininput.fst
