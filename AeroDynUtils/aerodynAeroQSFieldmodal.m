@@ -47,7 +47,7 @@ n_th= length(ThetaVec);
 n_R= length(data.R);
 
 Fx= permute(af.Fx, [2 1 3]);
-Fy= permute(af.Fy, [2 1 3]);
+Fy= permute(af.Fy, [2 1 3]); % positive in direction of rotation
 
 dR= diff(data.R);
 dRR= repmat(permute(dR, [3 2 1]), n_th, n_lam, 1);
@@ -64,26 +64,39 @@ Fyi(:, :, 1)= 0.5*Fy_sect(:, :, 1);
 Fyi(:, :, 2:end-1)= 0.5*(Fy_sect(:, :, 1:end-1)+Fy_sect(:, :, 2:end));
 Fyi(:, :, end)= 0.5*Fy_sect(:, :, end);
 
-Mx_sect= reshape(int_torque_m(reshape(Fy, n_lam*n_th, []), data.R), n_th, n_lam, n_R-1)*3;
+Mx_sect= 3*reshape(int_torque_m(reshape(Fy, n_lam*n_th, []), data.R), n_th, n_lam, n_R-1);
 Mxi= zeros(n_th, n_lam, n_R);
 Mxi(:, :, 1)= 0.5*Mx_sect(:, :, 1);
 Mxi(:, :, 2:end-1)= 0.5*(Mx_sect(:, :, 1:end-1)+Mx_sect(:, :, 2:end));
 Mxi(:, :, end)= 0.5*Mx_sect(:, :, end);
+
+My_sect= reshape(int_torque_m(reshape(Fx, n_lam*n_th, []), data.R), n_th, n_lam, n_R-1);
+Myi= zeros(n_th, n_lam, n_R);
+Myi(:, :, 1)= 0.5*My_sect(:, :, 1);
+Myi(:, :, 2:end-1)= 0.5*(My_sect(:, :, 1:end-1)+My_sect(:, :, 2:end));
+Myi(:, :, end)= 0.5*My_sect(:, :, end);
+My= sum(Myi, 3);
+My23= sum(Fxi, 3)*2/3*data.R(end);
+DMy23= My-My23; % this is the torque that must be applied to the blade root when the thrust is applied at 2/3*R
+% The reason for this approach is to save some comupation and model the
+% thrust precisely and DMy23 in a simplified way
+
 
 Fwind= data.rho/2 * pi*data.R(end)^2 * (af.WindSpeed').^2;
 FFwind= repmat(Fwind, 1, 1, n_R);
 tth= repmat(AeroFields.theta(:), 1, n_lam, n_R);
 
 cti= Fxi*3./FFwind;
-csi= Fyi./FFwind;
+csi= -Fyi./FFwind;
 cmi= Mxi./FFwind/data.R(end);
 
 AeroFields.ct= af.RtAeroCt';
 ct_adjust_sum= repmat((af.RtAeroCt')./sum(cti, 3), 1, 1, n_R);
 AeroFields.cti= cti .* ct_adjust_sum;
+AeroFields.cmy_D23= DMy23./Fwind/data.R(end);
 
 AeroFields.csi= csi;
-AeroFields.cs= -sum(AeroFields.csi, 3);
+AeroFields.cs= sum(AeroFields.csi, 3);
 
 AeroFields.cbxi= (Fxi.*cosd(tth) + Fyi.*sind(tth)) ./ FFwind;
 AeroFields.cbyi= (Fxi.*sind(tth) - Fyi.*cosd(tth)) ./ FFwind;
