@@ -29,7 +29,7 @@ function plotStep(fst_file, data, llam, tth, vv, tit)
 outputs.normal= {'RtTSR', 'RtVAvgxh', 'RtAeroCp', 'RtAeroCq', 'RtAeroCt'};
 outputs.all= {'AxInd', 'TnInd', 'Cx', 'Cy', 'VRel', 'Alpha'};
 
-aerofields= aerodynAeroQSField(llam(1), tth(1), fst_file, [], outputs);
+aerofields= aerodynAeroQSField(llam(1), tth(1), fst_file, outputs);
 cp1= aerofields.RtAeroCp;
 
 [~, cp01, cp0, ~, ad_step]= stepFromNeighboursAD(fst_file, data, llam, tth, vv, outputs, false);

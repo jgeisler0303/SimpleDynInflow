@@ -1,6 +1,6 @@
 outputs.normal= {'RtAeroCp', 'RtAeroCq', 'RtAeroCt', 'RtAeroFxh', 'RtAeroMxh', 'B1Fy'};
 outputs.all= {'Cx', 'Cy', 'Cn', 'Ct', 'Cl', 'Cd', 'Phi', 'VRel', 'Alpha', 'Fx', 'Fy'};
-af= aerodynAeroQSField(3:13, 0:22, '../example_data/sim/coh_URef-4_maininput.fst', 100, outputs);
+af= aerodynAeroQSField(3:13, 0:22, '../example_data/sim/coh_URef-4_maininput.fst', outputs);
 
 %%
 % Fx= data.rho/2*repmat(permute(data.chord, [3 2 1]), size(af.Cx, 1), size(af.Cx, 2), 1).*af.Cx.*af.VRel.^2;

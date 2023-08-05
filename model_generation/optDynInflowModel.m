@@ -10,7 +10,7 @@ data.TH= TH;
 
 outputs.normal= {'RtTSR', 'RtVAvgxh', 'RtAeroCp', 'RtAeroCq', 'RtAeroCt'};
 outputs.all= {'AxInd', 'TnInd', 'Cx', 'Cy', 'VRel', 'Alpha'};
-aerofields= aerodynAeroQSField(LAM, TH, fst_file, [], outputs);
+aerofields= aerodynAeroQSField(LAM, TH, fst_file, outputs);
 CP1= aerofields.RtAeroCp;
 save('aerodata', 'data', 'aerofields')
 

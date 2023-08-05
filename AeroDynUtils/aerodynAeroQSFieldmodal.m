@@ -15,7 +15,9 @@
 %   data        relevant aerodynamics data as loaded by loadAeroData
 %   LambdaVec   vector of tip speed ratios to calculate values for
 %   ThetaVec    vector of pitch angles to calculate values for in degrees
-%   HubHt       (default: 100) hub height to use in meters
+%   param       Parameters for overriding values in the configuration files
+%               and for the simulation, including:
+%       HubHt       (default: 100) hub height to use in meters
 %
 % Outputs:
 %   AeroFields  structure of aerodynamic fields/tables as required by
@@ -24,14 +26,17 @@
 % See also: aerodynAeroField, calcMeanField
 
 
-function AeroFields= aerodynAeroQSFieldmodal(FST_file, data, LambdaVec, ThetaVec, HubHt)
-if ~exist('HubHt', 'var') || isempty(HubHt)
-    HubHt= 100;
+function AeroFields= aerodynAeroQSFieldmodal(FST_file, data, LambdaVec, ThetaVec, param)
+if ~exist('param', 'var')
+    param= struct();
+end
+if ~isfield(param, 'HubHt')
+    param.HubHt= 100;
 end
 
 outputs.normal= {'RtAeroCp', 'RtAeroCq', 'RtAeroCt'};
 outputs.all= {'Fx', 'Fy', 'VRel'};
-af= aerodynAeroQSField(LambdaVec, ThetaVec, FST_file, HubHt, outputs);
+af= aerodynAeroQSField(LambdaVec, ThetaVec, FST_file, outputs, param);
 
 AeroFields.lambda= LambdaVec;
 AeroFields.theta= ThetaVec;
@@ -76,13 +81,15 @@ Myi(:, :, 1)= 0.5*My_sect(:, :, 1);
 Myi(:, :, 2:end-1)= 0.5*(My_sect(:, :, 1:end-1)+My_sect(:, :, 2:end));
 Myi(:, :, end)= 0.5*My_sect(:, :, end);
 My= sum(Myi, 3);
+My23i= Fxi*2/3*data.R(end);
 My23= sum(Fxi, 3)*2/3*data.R(end);
+DMy23i= Myi-My23i;
 DMy23= My-My23; % this is the torque that must be applied to the blade root when the thrust is applied at 2/3*R
-% The reason for this approach is to save some comupation and model the
+% The reason for this approach is to save some computation and model the
 % thrust precisely and DMy23 in a simplified way
 
 
-Fwind= data.rho/2 * pi*data.R(end)^2 * (af.WindSpeed').^2;
+Fwind= data.rho/2 * pi*data.R(end)^2 * (af.HWindSpeedX').^2;
 FFwind= repmat(Fwind, 1, 1, n_R);
 tth= repmat(AeroFields.theta(:), 1, n_lam, n_R);
 
@@ -93,9 +100,11 @@ cmi= Mxi./FFwind/data.R(end);
 AeroFields.ct= af.RtAeroCt';
 ct_adjust_sum= repmat((af.RtAeroCt')./sum(cti, 3), 1, 1, n_R);
 AeroFields.cti= cti .* ct_adjust_sum;
-AeroFields.cmy_D23= DMy23./Fwind/data.R(end);
 
-AeroFields.csi= csi;
+AeroFields.cmy_D23= DMy23./Fwind/data.R(end);
+AeroFields.cmy_D23i= DMy23i./FFwind/data.R(end);
+
+AeroFields.csi= csi; % in plane force
 AeroFields.cs= sum(AeroFields.csi, 3);
 
 AeroFields.cbxi= (Fxi.*cosd(tth) + Fyi.*sind(tth)) ./ FFwind;
@@ -124,10 +133,19 @@ if isfield(data, 'ModalShapes')
         AeroFields= modalDeriv(AeroFields, i, 'cm');
         AeroFields= modalDeriv(AeroFields, i, 'ct');
         AeroFields= modalDeriv(AeroFields, i, 'cs');
+        AeroFields= modalDeriv(AeroFields, i, 'cmy_D23');
         for j= 1:length(AeroFields.ModalShapes)
             AeroFields= modalDeriv(AeroFields, i, sprintf('cb%d', j));
         end
     end
+end
+
+AeroFields= shearDeriv(AeroFields, 'cm');
+AeroFields= shearDeriv(AeroFields, 'ct');
+AeroFields= shearDeriv(AeroFields, 'cs');
+AeroFields= shearDeriv(AeroFields, 'cmy_D23');
+for j= 1:length(AeroFields.ModalShapes)
+    AeroFields= shearDeriv(AeroFields, sprintf('cb%d', j));
 end
 
 
@@ -174,3 +192,30 @@ AeroFields.(sprintf('d%si_dom_v', sensor))= dcXi_dom_v;
 AeroFields.(sprintf('d%si_dvbx_v', sensor))= dcXi_dvbx_v;
 AeroFields.(sprintf('d%si_dvby_v', sensor))= dcXi_dvby_v;
 
+function AeroFields= shearDeriv(AeroFields, sensor)
+
+sensor_i= [sensor 'i'];
+
+cXi_= AeroFields.(sensor_i);
+ni= size(cXi_, 3);
+dcXi_dlam= zeros(size(cXi_));
+for i= 1:ni
+    dcXi_dlam(:, :, i)= gradient(cXi_(:, :, i), AeroFields.lambda, AeroFields.theta);
+end
+
+nth= size(dcXi_dlam, 1);
+nlam= size(dcXi_dlam, 2);
+nseg= size(dcXi_dlam, 3);
+
+LAM= repmat(AeroFields.lambda(:)', nth, 1, nseg);
+R= AeroFields.R(:);
+RR= repmat(permute(R(:), [3 2 1]), nth, nlam, 1);
+
+% vx = axial positive down wind
+dcXi_dvx_v= dcXi_dlam .* -LAM; % dcXi_dvx_v= dcXi_dvx * v;
+
+
+
+dcXi_dkappa_v= RR.*(2*AeroFields.(sensor_i) + dcXi_dvx_v);
+
+AeroFields.(sprintf('d%s_dkappa_v', sensor))= sum(dcXi_dkappa_v, 3);

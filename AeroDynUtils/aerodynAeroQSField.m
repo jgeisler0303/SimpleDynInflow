@@ -13,7 +13,6 @@
 %   LAM         vector of tip speed ratios to calculate values for
 %   TH          vector of pitch angles to calculate values for in degrees
 %   FST_file    name of the FAST main parameter file
-%   HubHt       (default: 100) hub height to use in meters
 %   outputs     (default: leave AD_file unchanged)
 %               structure with fields "normal", "all" and "num_bld".
 %               "normal" must be a cell array of strings defining the
@@ -23,32 +22,56 @@
 %               all blade stations as defined in ad_output_channel.pdf.
 %               "num_bld" must be an integer defining the number of blades
 %               for which to output all blade stations.
+%   param       Parameters for overriding values in the configuration files
+%               and for the simulation, including:
+%       HubHt       (default: 100) hub height to use in meters
+%       ShearExp    (default: 0) shear exponent to use
+%       Yaw         (default: 0) yaw angle to use in degrees
+%       dT          (default: 0.01)
+%                   time interval for aerodynamic calculations
+%       Tmax        (default: 0.01) end time for the simulations
 %
 % Outputs:
 %   aerofields  structure of aerodynamic fields
 %
 % See also: aerodynAeroField, calcMeanField
 
-function aerofields= aerodynAeroQSField(LAM, TH, FST_file, HubHt, outputs)
-
-if ~exist('HubHt', 'var') || isempty(HubHt)
-    HubHt= 100;
-end
+function aerofields= aerodynAeroQSField(LAM, TH, FST_file, outputs, param)
 
 if ~exist('outputs', 'var')
     outputs= [];
 end
+if ~exist('param', 'var')
+    param= struct();
+end
+
+if ~isfield(param, 'HubHt')
+    param.HubHt= 100;
+end
+if ~isfield(param, 'ShearExp')
+    param.ShearExp= 0;
+end
+if ~isfield(param, 'Yaw')
+    param.Yaw= 0;
+end
+if ~isfield(param, 'dT')
+    param.dT= 0.01;
+end
+if ~isfield(param, 'Tmax')
+    param.Tmax= 0.01;
+end
+
 
 FST= FAST2Matlab(FST_file);
 fst_dir= fileparts(FST_file);
 
 AD_file= strrep(GetFASTPar(FST, 'AeroFile'), '"', '');
 adDataOut= FAST2Matlab(fullfile(fst_dir, AD_file));
-adDataOut= SetFASTPar(adDataOut, 'WakeMod', 1);
-adDataOut= SetFASTPar(adDataOut, 'AFAeroMod', 1);
-adDataOut= SetFASTPar(adDataOut, 'TwrPotent', 0);
-adDataOut= SetFASTPar(adDataOut, 'TwrShadow', 'False');
-adDataOut= SetFASTPar(adDataOut, 'TwrAero', 'False');
+adDataOut= setParam(adDataOut, 'WakeMod', 1, param);
+adDataOut= setParam(adDataOut, 'AFAeroMod', 1, param);
+adDataOut= setParam(adDataOut, 'TwrPotent', 0, param);
+adDataOut= setParam(adDataOut, 'TwrShadow', '0', param);
+adDataOut= setParam(adDataOut, 'TwrAero', 'False', param);
 ad_tfile= [AD_file '.tmp'];
 ad_tpath= fullfile(fst_dir, ad_tfile);
 FST= SetFASTPar(FST, 'AeroFile', ad_tfile);
@@ -69,7 +92,7 @@ fst_tfile= [FST_file '.tmp'];
 Matlab2FAST(FST, FST_file, fst_tfile)
 c= onCleanup(@()delete_temp({ad_tpath, ed_tpath, fst_tfile}));
 
-aerodyndata= aerodynAeroField(LAM, TH, fst_tfile, HubHt, 0, 0, 0.01, 0.01, outputs);
+aerodyndata= aerodynAeroField(LAM, TH, fst_tfile, outputs, param);
 
 fields= fieldnames(aerodyndata);
 for i_field= 1:length(fields)
@@ -87,7 +110,7 @@ for i_field= 1:length(fields)
         f= zeros([size(aerodyndata), max_station, max_bld]);
         for i= 1:max_bld
             for j= 1:max_station
-                f(:, :, j, i)= reshape([aerodyndata.(sprintf('B%dN%03d%s', i, j, fieldname))], size(aerodyndata));;
+                f(:, :, j, i)= reshape([aerodyndata.(sprintf('B%dN%03d%s', i, j, fieldname))], size(aerodyndata));
             end
         end
         aerofields.(fieldname)= f;
@@ -109,13 +132,34 @@ for i_field= 1:length(fields)
             end
         end
         aerofields.(fieldname)= f;
+    elseif strncmp(fields{i_field}, 'B1', 2) || strncmp(fields{i_field}, 'B22', 2) || strncmp(fields{i_field}, 'B3', 2)
+        fieldname= fields{i_field}(3:end);
+        i_bld= str2double(fields{i_field}(2));
+
+        max_station= size(aerodyndata(1, 1).(fields{i_field}), 2);
+        if ~isfield(aerofields, fieldname)
+            f= zeros([size(aerodyndata), max_station, 1]);
+        else
+            f= aerofields.(fieldname);
+        end
+
+        f(:, :, :, i_bld)= permute(reshape([aerodyndata.(fields{i_field})], [], size(aerodyndata, 1), size(aerodyndata, 2)), [2 3 1]);
+        aerofields.(fieldname)= f;        
     else
         aerofields.(fields{i_field})= reshape([aerodyndata.(fields{i_field})], size(aerodyndata));
     end
-
 end
+
 
 function delete_temp(names)
 for i= 1:length(names)
     delete(names{i})
 end
+
+function data= setParam(data, label, default, param)
+if isfield(param, label)
+    val= param.(label);
+else
+    val= default;
+end
+data= SetFASTPar(data, label, val);

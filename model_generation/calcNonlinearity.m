@@ -36,7 +36,7 @@ outputs.normal= {'RtTSR', 'RtVAvgxh', 'RtAeroCp', 'RtAeroCq', 'RtAeroCt'};
 outputs.all= {'AxInd', 'TnInd', 'Cx', 'Cy', 'VRel', 'Alpha'};
 data= loadAeroData(fst_file);
 
-aerofields= aerodynAeroQSField(lam, th, fst_file, [], outputs);
+aerofields= aerodynAeroQSField(lam, th, fst_file, outputs);
 cp1= aerofields.RtAeroCp;
 
 DCP= zeros(length(DLAM), length(DTH));

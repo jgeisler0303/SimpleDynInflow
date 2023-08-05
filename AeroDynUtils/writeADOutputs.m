@@ -45,7 +45,7 @@ if ~isempty(outputs.all)
     end
     fprintf(ofid, '%d              BldNd_BladesOut     - Number of blades to output all node information at.  Up to number of blades on turbine. (-)\n', outputs.num_bld);
     fprintf(ofid, '"All"          BldNd_BlOutNd       - Future feature will allow selecting a portion of the nodes to output.  Not implemented yet. (-)\n');
-    fprintf(ofid, '\n'); % there needs to be an empty line here, maybe a bug in the curretn version of AeroDyn driver
+    fprintf(ofid, '                  OutList             - The next line(s) contains a list of output parameters.  See OutListParameters.xlsx for a listing of available output channels, (-)\n'); % there needs to be an empty line here, maybe a bug in the curretn version of AeroDyn driver
     for i= 1:length(outputs.all)
         if outputs.all{i}(1)~='"'
             fprintf(ofid, '"%s"\n', outputs.all{i});
